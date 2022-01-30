@@ -1,0 +1,87 @@
+
+#
+log_format  listen_log_format  '$remote_addr|$document_root$document_uri-"$request" [$status]'
+			    ' [body:$body_bytes_sent|content_length:$content_length]';
+#
+log_format  api_log_format  '$remote_addr|$upstream_addr-"$request" [$status]'
+			    ' [body:$body_bytes_sent|content_length:$content_length]';
+
+log_format  static_log_format  '$remote_addr|$document_root$document_uri-"$request" [$status]'
+			    ' [body:$body_bytes_sent|content_length:$content_length]';
+
+#
+log_format  dynamic_log_format  '$remote_addr|$upstream_addr-"$request" [$status]'
+                            ' [body:$body_bytes_sent|content_length:$content_length]';
+#
+
+upstream apisservers {
+	
+	server localhost:5001;
+	server localhost:5002;
+	server localhost:5003;
+	server localhost:5004;
+	server localhost:5005;
+}
+
+server {
+
+        listen 0.0.0.0:80 default_server;
+        listen [::]:80 default_server;
+
+        # SSL configuration
+        #
+        # listen 443 ssl default_server;
+        # listen [::]:443 ssl default_server;
+        #
+        #
+        access_log  /var/log/nginx/listen.access.log listen_log_format;
+        #
+
+        root /var/www/html;
+
+        # Add index.php to the list if you are using PHP
+        index index.html index.htm index.nginx-debian.html;
+
+        server_name _;
+
+        location /api {
+                #
+                access_log  /var/log/nginx/api.access.log api_log_format;
+                #
+                proxy_pass         http://apisservers;
+                proxy_http_version 1.1;
+                proxy_set_header   Upgrade $http_upgrade;
+                proxy_set_header   Connection keep-alive;
+                proxy_set_header   Host $host;
+                proxy_cache_bypass $http_upgrade;
+                proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header   X-Forwarded-Proto $scheme;
+                #
+        }
+
+        location / {
+                #
+                access_log  /var/log/nginx/dynamic.access.log dynamic_log_format;
+                #
+                proxy_pass  http://localhost:8080;
+                #
+        }
+
+        # This location block fixed my issue.
+	# it for static-file running dotnet netcore 5
+
+	#    location ~* /(css|js|lib) {
+        #       root /var/www/DotNet-projecty-api-2/wwwroot;
+        #  }
+
+}
+
+#
+# sudo cp default  /etc/nginx/sites-available/default
+# sudo nano  /etc/nginx/sites-available/default
+# sudo nginx -t
+# sudo nginx -s reload
+# sudo tail -f  /var/log/nginx/api.access.log
+# sudo tail -f  /var/log/nginx/ng.access.log
+# sudo systemctl daemon-reload
+#
