@@ -1,0 +1,30 @@
+
+#
+log_format  dynamic_log_format  '$remote_addr|$upstream_addr-"$request" [$status]'
+                            ' [body:$body_bytes_sent|content_length:$content_length]';
+#
+
+server {
+
+        listen 0.0.0.0:80 default_server;
+        listen [::]:80 default_server;
+
+        root /var/www/http;
+
+        # Add index.php to the list if you are using PHP
+        index index.html index.htm index.nginx-debian.html;
+
+        server_name _;
+
+        location / {
+                #
+                access_log  /var/log/nginx/dynamic.access.log dynamic_log_format;
+                #
+                proxy_pass  http://localhost:5000;
+                #
+        }
+
+
+}
+
+#sudo tail -f  /var/log/nginx/dynamic.access.log
